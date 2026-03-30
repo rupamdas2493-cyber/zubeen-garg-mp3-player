@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jubin Garg Player</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #121212;
+            color: white;
+            text-align: center;
+        }
+
+        .song-card, .video-card {
+            background:#1e1e1e;
+            margin:10px;
+            padding:10px;
+            border-radius:10px;
+            width:150px;
+            display:inline-block;
+            cursor:pointer;
+            transition: 0.3s;
+        }
+
+        .song-card:hover, .video-card:hover {
+            transform: scale(1.05);
+        }
+
+        .song-card img, .video-card img {
+            width:100%;
+            border-radius:10px;
+        }
+
+        .player {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: #181818;
+            padding: 15px;
+        }
+
+        button {
+            padding: 8px;
+            margin: 5px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .controls button {
+            background: #1db954;
+            color: white;
+        }
+
+        #progress {
+            width: 80%;
+        }
+
+        input {
+            padding:10px;
+            border-radius:5px;
+            border:none;
+            margin:10px;
+        }
+
+        #videoPlayer {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>🎧 Jubin Garg MP3 Player</h1>
+
+<!-- 🔍 ONLINE SEARCH -->
+<form method="POST" action="/search">
+    <input type="text" name="query" placeholder="Search songs (online + local)..." required>
+    <button type="submit">Search</button>
+</form>
+
+<!-- 🎬 ONLINE RESULTS -->
+{% if videos %}
+    <h3>🎬 Online Results:</h3>
+
+    <div style="display:flex; flex-wrap:wrap; justify-content:center;">
+        {% for v in videos %}
+            <div class="video-card" onclick="playVideo('{{ v.id }}')">
+                <img src="{{ v.thumbnail }}">
+                <p style="font-size:14px;">{{ v.title }}</p>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<!-- 🎬 VIDEO PLAYER -->
+<div id="videoPlayer"></div>
+
+<!-- 🔍 LOCAL SEARCH -->
+<input type="text" id="search" placeholder="Filter local songs..." onkeyup="searchSongs()">
+
+<!-- 🎵 LOCAL SONGS -->
+<h3>🎵 Local Results:</h3>
+
+<div id="songList">
+    {% for song in songs %}
+        <div class="song-card"
+             onclick="playSong('{{ url_for('get_song', filename=song) }}', '{{ song }}')">
+
+            <img src="/static/covers/{{ song.replace('.mp3', '.jpg') }}"
+                 onerror="this.src='/static/default.jpg'">
+
+            <p>{{ song }}</p>
+
+        </div>
+    {% endfor %}
+</div>
+
+<!-- 🎧 PLAYER -->
+<div class="player">
+    <h3 id="nowPlaying">No song playing</h3>
+
+    <audio id="player"></audio>
+
+    <input type="range" id="progress" value="0">
+
+    <div class="controls">
+        <button onclick="prevSong()">⏮</button>
+        <button onclick="togglePlay()">▶️</button>
+        <button onclick="nextSong()">⏭</button>
+    </div>
+</div>
+
+<script>
+// 🔍 LOCAL SEARCH FILTER
+function searchSongs() {
+    let input = document.getElementById("search").value.toLowerCase();
+    let items = document.querySelectorAll(".song-card");
+
+    items.forEach(item => {
+        let text = item.innerText.toLowerCase();
+        item.style.display = text.includes(input) ? "inline-block" : "none";
+    });
+}
+
+// 🎵 PLAYER LOGIC
+let songs = {{ songs | tojson }};
+let currentIndex = 0;
+let player = document.getElementById("player");
+let progress = document.getElementById("progress");
+
+function playSong(url, name) {
+    currentIndex = songs.indexOf(name);
+    player.src = url;
+    player.play();
+
+    document.getElementById("nowPlaying").innerText = "🎵 Playing: " + name;
+}
+
+function togglePlay() {
+    if (player.paused) player.play();
+    else player.pause();
+}
+
+function nextSong() {
+    currentIndex = (currentIndex + 1) % songs.length;
+    playSong("/songs/" + songs[currentIndex], songs[currentIndex]);
+}
+
+function prevSong() {
+    currentIndex = (currentIndex - 1 + songs.length) % songs.length;
+    playSong("/songs/" + songs[currentIndex], songs[currentIndex]);
+}
+
+// auto next
+player.addEventListener("ended", nextSong);
+
+// progress update
+player.addEventListener("timeupdate", () => {
+    if (player.duration) {
+        progress.value = (player.currentTime / player.duration) * 100;
+    }
+});
+
+// seek
+progress.addEventListener("input", () => {
+    if (player.duration) {
+        player.currentTime = (progress.value / 100) * player.duration;
+    }
+});
+
+// 🎬 PLAY YOUTUBE VIDEO
+function playVideo(id) {
+    document.getElementById("videoPlayer").innerHTML = `
+        <iframe width="400" height="250"
+            src="https://www.youtube.com/embed/${id}"
+            frameborder="0"
+            allowfullscreen>
+        </iframe>
+    `;
+}
+</script>
+
+</body>
+</html>
