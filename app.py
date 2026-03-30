@@ -1,13 +1,17 @@
+import os
 from flask import Flask, render_template, request
 from googleapiclient.discovery import build
-import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'supersecretkey'
 
-# 🔐 Use environment variable (IMPORTANT for production)
-API_KEY = os.getenv("YOUTUBE_API_KEY")
+# ✅ TEMP: Hardcoded API key (to make it work)
 
+API_KEY = os.environ.get("AIzaSyBq_on5XnyoQWUDZgLu-kJSHwQfkXQ4Lss")
+if not API_KEY:
+    raise ValueError("YOUTUBE_API_KEY missing")
+
+# ✅ Build YouTube client
 youtube = build("youtube", "v3", developerKey=API_KEY)
 
 videos_cache = []  # store results temporarily
@@ -53,4 +57,5 @@ def play(video_id):
 
 
 if __name__ == "__main__":
-    app.run()
+    # ✅ Works locally + Render
+    app.run(host="0.0.0.0", port=5000, debug=True)
