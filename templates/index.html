@@ -104,7 +104,8 @@
     {% for video in videos %}
         <div class="video">
             <a href="/play/{{ video.id }}">
-                <img src="{{ video.thumbnail }}">
+                <img src="{{ video.thumbnail }}"
+                     onerror="this.onerror=null;this.src='{{ url_for('static', filename='default.jpg') }}';">
             </a>
             <p>{{ video.title }}</p>
         </div>
